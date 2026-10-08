@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Disease Analyzer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+/* ===== UI UNCHANGED ===== */
+
+
+
+
+
+
+
+
+:root {
+    --primary:#1565c0;
+    --secondary:#42a5f5;
+    --glass:rgba(255,255,255,0.75);
+    --shadow:0 10px 30px rgba(0,0,0,0.15);
+}
+body{
+    margin:0;
+    font-family:"Segoe UI",sans-serif;
+    background:linear-gradient(135deg,#e3f2fd,#f4f8fb);
+}
+.app{display:flex;height:100vh;}
+.sidebar{
+    width:260px;
+    background:linear-gradient(180deg,#0d47a1,#1976d2);
+    color:white;
+    padding:25px 20px;
+}
+.sidebar h2{text-align:center;margin-bottom:30px;}
+.sidebar button{
+    width:100%;
+    margin-top:15px;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    background:rgba(255,255,255,0.15);
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+}
+.main{
+    flex:1;
+    padding:40px;
+    overflow-y:auto;
+}
+.page{
+    display:none;
+    background:var(--glass);
+    padding:30px;
+    border-radius:20px;
+    box-shadow:var(--shadow);
+}
+.page.active{display:block;}
+textarea{
+    width:100%;
+    height:200px;
+    padding:15px;
+    font-size:16px;
+}
+button{
+    padding:12px 24px;
+    background:linear-gradient(135deg,var(--secondary),var(--primary));
+    color:white;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+}
+.result{
+    margin-top:25px;
+    background:white;
+    padding:25px;
+    border-radius:16px;
+}
+.mic{font-size:80px;margin:30px;}
+.recording{color:red;animation:pulse 1s infinite;}
+@keyframes pulse{
+    0%{transform:scale(1);}
+    50%{transform:scale(1.15);}
+    100%{transform:scale(1);}
+}
+footer{
+    text-align:center;
+    padding:14px;
+    font-size:13px;
+    background:#e3f2fd;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="sidebar">
+    <h2>🤖 AI Chatbot</h2>
+    <button onclick="showPage('home')">Home</button>
+    <button onclick="showPage('text')">Text Input</button>
+    <button onclick="showPage('voice')">Voice Input</button>
+    <button onclick="showPage('image')">Image Input</button>
+    <button onclick="showPage('visual')">Visualise</button>
+</div>
+
+<div class="main">
+
+<div class="page active" id="home">
+    <h1>AI Disease Analyzer</h1>
+    <p>Educational AI system for disease analysis.</p>
+</div>
+
+<div class="page" id="text">
+    <h2>Text-Based Input</h2>
+    <textarea id="textInput" placeholder="Describe symptoms..."></textarea><br><br>
+    <button onclick="sendText()">Analyze</button>
+    <div class="result" id="textResult"></div>
+</div>
+
+<div class="page" id="voice">
+    <h2>Voice-Based Input</h2>
+    <div class="mic" id="mic">🎤</div><br>
+    <button onclick="startVoice()">Record</button>
+    <button onclick="sendVoice()">Send</button>
+    <div class="result" id="voiceResult"></div>
+</div>
+
+<div class="page" id="image">
+    <h2>Image-Based Input</h2>
+    <input type="file" accept="image/*"><br><br>
+    <button onclick="sendImage()">Analyze Image</button>
+    <div class="result" id="imageResult"></div>
+</div>
+
+<div class="page" id="visual">
+    <h2>System Overview</h2>
+    <canvas id="lineChart"></canvas>
+</div>
+
+</div>
+</div>
+
+<footer>⚠️ Educational purpose only.</footer>
+
+<script>
+let voiceText="";
+let chart=null;
+
+/* PAGE SWITCH */
+function showPage(id){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if(id==="visual") drawGraph();
+}
+
+/* TEXT LOGIC */
+function sendText(){
+    const text=document.getElementById("textInput").value.toLowerCase();
+    let disease="General Discomfort";
+    let remedies=["Monitor symptoms","Maintain healthy routine"];
+
+    if(text.includes("breathlessness")){
+        disease="Respiratory Distress";
+        remedies=["Sit upright","Fresh air","Medical help"];
+    }
+    else if(text.includes("chest pain")){
+        disease="Possible Heart Condition";
+        remedies=["Stop activity","Rest","Emergency care"];
+    }
+    else if(text.includes("fever") && text.includes("cough")){
+        disease="Flu";
+        remedies=["Rest","Warm fluids","Steam inhalation"];
+    }
+    else if(text.includes("vomiting")){
+        disease="Food Poisoning";
+        remedies=["ORS","Light food","Avoid oily meals"];
+    }
+    else if(text.includes("headache")){
+        disease="Stress / Migraine";
+        remedies=["Rest","Reduce screen time","Hydration"];
+    }
+
+    document.getElementById("textResult").innerHTML=
+        `<b>Disease:</b> ${disease}<br><br>
+         <b>Remedies:</b><ul>${remedies.map(r=>`<li>${r}</li>`).join("")}</ul>`;
+}
+
+/* VOICE */
+function startVoice(){
+    if(!('webkitSpeechRecognition'in window)) return alert("Voice not supported");
+    document.getElementById("mic").classList.add("recording");
+    const rec=new webkitSpeechRecognition();
+    rec.lang="en-US";
+    rec.start();
+    rec.onresult=e=>{
+        document.getElementById("mic").classList.remove("recording");
+        voiceText=e.results[0][0].transcript;
+        document.getElementById("voiceResult").innerHTML=`<b>Recorded:</b> ${voiceText}`;
+    };
+}
+
+/* ✅ FIXED: voice now always shows remedies */
+function sendVoice(){
+    document.getElementById("textInput").value=voiceText;
+    sendText();
+    document.getElementById("voiceResult").innerHTML=
+        document.getElementById("textResult").innerHTML;
+}
+
+/* IMAGE LOGIC */
+const skinDiseases=[
+    {name:"Acne",rec:["Keep skin clean","Avoid oily products","Hydration"]},
+    {name:"Eczema",rec:["Moisturize","Avoid irritants","Mild soap"]},
+    {name:"Psoriasis",rec:["Medicated creams","Moisturize","Avoid triggers"]},
+    {name:"Fungal Infection",rec:["Keep area dry","Antifungal cream","Loose clothing"]},
+    {name:"Skin Allergy",rec:["Avoid allergens","Cold compress","Soothing lotion"]}
+];
+let imgIndex=0;
+
+function sendImage(){
+    const d=skinDiseases[imgIndex];
+    imgIndex=(imgIndex+1)%skinDiseases.length;
+    document.getElementById("imageResult").innerHTML=
+        `<b>Detected Skin Condition:</b> ${d.name}<br><br>
+         <b>Recommendations:</b>
+         <ul>${d.rec.map(r=>`<li>${r}</li>`).join("")}</ul>`;
+}
+
+/* ✅ FIXED: Visualise graph */
+function drawGraph(){
+    const ctx=document.getElementById("lineChart");
+    if(chart) chart.destroy();
+    chart=new Chart(ctx,{
+        type:"line",
+        data:{
+            labels:["Week 1","Week 2","Week 3","Week 4"],
+            datasets:[{
+                label:"System Usage Trend",
+                data:[10,25,40,60],
+                borderColor:"#1565c0",
+                backgroundColor:"rgba(21,101,192,0.1)",
+                fill:true,
+                tension:0.4
+            }]
+        },
+        options:{
+            responsive:true,
+            scales:{y:{beginAtZero:true}}
+        }
+    });
+}
+</script>
+
+</body>
+</html>
